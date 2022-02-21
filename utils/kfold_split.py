@@ -3,10 +3,10 @@ import pandas as pd
 import numpy as np
 from torch_utils import seed_torch
 
-seed_torch(0)
 n_fold=5
 input_csv = '../whale/train.csv'
 output_csv = "../whale/folds.csv"
+
 if __name__ == "__main__":
     seed_torch(0)
     train = pd.read_csv(input_csv)
