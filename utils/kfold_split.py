@@ -3,13 +3,13 @@ import pandas as pd
 import numpy as np
 from torch_utils import seed_torch
 
-def split_kfold(input_csv,output_csv,n_fold):
+def split_kfold(input_csv,output_csv,n_fold=5,n_class_skip=1):
     train = pd.read_csv(input_csv)
     train['classes'] = train.groupby('individual_id').ngroup()
     train['classes_species'] = train.groupby('species').ngroup()
     df_list = []
     for index,df in train.groupby('classes'):
-        if len(df)>1:
+        if len(df)>n_class_skip:
             df = df.sample(frac=1)
             df['fold'] = (np.arange(len(df)) + np.random.randint(n_fold)) % n_fold
             df_list.append(df)
@@ -25,9 +25,10 @@ def split_kfold(input_csv,output_csv,n_fold):
 if __name__ == "__main__":
     seed_torch(0)
     n_fold=5
+    n_class_skip=1
     input_csv = '../whale/train.csv'
     output_csv = "../whale/folds.csv"
-    split_kfold(input_csv,output_csv,n_fold)
+    split_kfold(input_csv,output_csv,n_fold,n_class_skip)
 #     classes = list(set(train.individual_id))
 #     classes_species = list(set(train.species))
 #     sorted(classes)
