@@ -12,7 +12,7 @@ import time
 def debug_mode(config,folds):
     if config.debug:
         folds = folds.sample(n=1000, random_state=config.seed).reset_index(drop=True)
-        config.epoch = 1
+        config.epochs = 1
         config.n_folds = 1
     return config,folds
 
