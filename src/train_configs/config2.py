@@ -12,7 +12,7 @@ class config:
     debug=False
     apex=False
     print_freq=100
-    size=512
+    size=size
     gradient_accumulation_steps=1
     max_grad_norm=1000
     ### data
@@ -45,7 +45,7 @@ class config:
              "args": {}}
     
     train_transforms = albumentations.Compose([
-            albumentations.Resize(512, 512),
+            albumentations.Resize(size, size),
             albumentations.HorizontalFlip(p=0.5),
             albumentations.RandomBrightness(limit=0.2, p=0.25),
             albumentations.RandomContrast(limit=0.2, p=0.25),
@@ -61,7 +61,7 @@ class config:
         ])
 
     val_transforms = albumentations.Compose([
-                albumentations.Resize(512, 512),
+                albumentations.Resize(size, size),
                 albumentations.Normalize(
                     mean=[0.485, 0.456, 0.406],
                     std=[0.229, 0.224, 0.225],
