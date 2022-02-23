@@ -40,7 +40,7 @@ defult_val_trms = albumentations.Compose([
         ])
 
 class TrainDataset(Dataset):
-    def __init__(self, df, TRAIN_PATH, transform=None):
+    def __init__(self, df, TRAIN_PATH, transform=None,crop_p=None,crop_csv_path=None):
         self.df = df
         self.TRAIN_PATH = TRAIN_PATH
         self.file_names = df['image'].values
@@ -48,14 +48,37 @@ class TrainDataset(Dataset):
         self.labels_s = df['classes_species'].values
         self.transform = transform
         
+        if crop_csv_path is not None and crop_p is not None:
+            self.crop_df = pd.read_csv(crop_csv_path)
+            self.crop_df = self.crop_df.fillna('[0]')
+            self.crop_df['bbox'] = self.crop_df['bbox'].map(eval)
+            self.crop_df['conf'] = self.crop_df['conf'].map(eval)
+            self.crop_p = crop_p
+            self.use_crop = True
+        else:
+            self.use_crop = False
+        
     def __len__(self):
         return len(self.df)
-
+    
+    def Crop(self,image,xmin, ymin, xmax, ymax):
+        offset_y = torch.rand(1)[0]/4 if self.crop_p != 1 else 0
+        offset_x = torch.rand(1)[0]/4 if self.crop_p != 1 else 0
+        image = image[int(max(0,ymin*(1-offset_y))):int(min(image.shape[0],ymax*(1+offset_y))),int(max(0,xmin*(1-offset_x))):int(min(image.shape[1],xmax*(1+offset_x)))]
+        return image
+    
     def __getitem__(self, idx):
         file_name = self.file_names[idx]
         file_path = f'{self.TRAIN_PATH}/{file_name}'
         image = cv2.imread(file_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        if self.use_crop and torch.rand(1)[0]<self.crop_p:
+            row = self.crop_df[self.crop_df.image_id == file_name]
+            conf = row['conf'].values
+            if conf[0][0] > 0.2:
+                bbox = row['bbox'].values 
+                xmin, ymin, xmax, ymax = bbox[0][0]
+                image = self.Crop(image,xmin, ymin, xmax, ymax)
         if self.transform:
             augmented = self.transform(image=image)
             image = augmented['image']
@@ -83,16 +106,16 @@ class TestDataset(Dataset):
             image = augmented['image']
         return {'image':image,'file_name':file_name}
     
-def GetTrainDataLoader(folds,fold,train_transforms,val_transforms,batch_size,num_workers,data_root_path):
+def GetTrainDataLoader(folds,fold,train_transforms,val_transforms,batch_size,num_workers,data_root_path,crop_p,crop_csv_path,use_crop_for_val):
     trn_idx = folds[folds['fold'] != fold].index
     val_idx = folds[folds['fold'] == fold].index
 
     train_folds = folds.loc[trn_idx].reset_index(drop=True)
     valid_folds = folds.loc[val_idx].reset_index(drop=True)
     
-    train_dataset = TrainDataset(train_folds,data_root_path, transform=train_transforms)
-    valid_dataset = TrainDataset(valid_folds, data_root_path,transform=val_transforms)
-    train_dataset_emb = TrainDataset(train_folds,data_root_path, transform=val_transforms)
+    train_dataset = TrainDataset(train_folds,data_root_path, transform=train_transforms,crop_p=crop_p,crop_csv_path=crop_csv_path)
+    valid_dataset = TrainDataset(valid_folds, data_root_path,transform=val_transforms,crop_p=1 if use_crop_for_val else 0,crop_csv_path=crop_csv_path)
+    train_dataset_emb = TrainDataset(train_folds,data_root_path, transform=val_transforms,crop_p=1 if use_crop_for_val else 0,crop_csv_path=crop_csv_path)
 
     train_loader = DataLoader(train_dataset, 
                               batch_size=batch_size, 
