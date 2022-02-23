@@ -8,6 +8,9 @@ import numpy
 from pathlib import Path
 from utils import *
 from post_processing import *
+import torchvision
+    
+
 def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler, device):
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -18,6 +21,8 @@ def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler
     start = end = time.time()
     global_step = 0
     for step, batch in enumerate(train_loader):
+        if epoch == 0 and step<3:
+            torchvision.utils.save_image(batch['image'],f"{config.log_DIR}/{config.exp_name}_step{step}.png",normalize=True,nrow=3)
         # measure data loading time
         data_time.update(time.time() - end)
         images = batch['image'].to(device)
