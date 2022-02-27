@@ -10,6 +10,8 @@ import albumentations
 import models
 import time
 from swa_utils import AveragedModel, SWALR,update_bn
+import torch.cuda.amp as amp
+
 def debug_mode(config,folds):
     if config.debug:
         folds = folds.sample(n=1000, random_state=config.seed).reset_index(drop=True)
@@ -35,6 +37,7 @@ def train_one_fold(config,LOGGER,folds,fold=0):
     optimizer = eval(config.optimizer['f_class'])(model.parameters(),**config.optimizer['args'])
     scheduler = eval(config.scheduler['f_class'])(optimizer,**config.scheduler['args'])
     criterion = eval(config.criterion['f_class'])(**config.criterion['args'])
+    scaler = amp.GradScaler()
     if config.swa:
         swa_start = config.swa_start
         swa_model = AveragedModel(model)
@@ -45,19 +48,19 @@ def train_one_fold(config,LOGGER,folds,fold=0):
     best_loss = np.inf
     for epoch in range(config.epochs):
         start_time = time.time()
-        avg_loss = train_fn(config,data['train_loader'], model, criterion , optimizer, epoch, scheduler, config.device)
+        avg_loss = train_fn(config,data['train_loader'], model, criterion , optimizer, epoch, scheduler, config.device,scaler)
         if epoch > swa_start and config.swa:
             swa_model.update_parameters(model)
             swa_scheduler.step()
         else:
             scheduler.step()
         if epoch % (config.val_freq) == 0 or epoch >= config.val_epoch_freq:
-            score = valid_fn(config,model,data['train_loader_emb'],data['valid_loader'],device=config.device,run_cv = True)
+            score,score_softmax = valid_fn(config,model,data['train_loader_emb'],data['valid_loader'],device=config.device,run_cv = True)
             # if isinstance(scheduler, ReduceLROnPlateau):
             #     scheduler.step(avg_val_loss)
             # else:
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}')
-            LOGGER.info(f'Epoch {epoch+1} - metric top 5: {score}')
+            LOGGER.info(f'Epoch {epoch+1} - metric top 5 arcface: {score}, metric top 5 softmax {score_softmax}')
             if score > best_score:
                 best_score = score
                 LOGGER.info(f'Epoch {epoch+1} - Save Best Score: {best_score:.4f}')
@@ -84,9 +87,3 @@ if __name__ == '__main__':
     seed_torch(config.seed)
     main(config)
 
-    
-
-
-
-            
-    
