@@ -9,9 +9,10 @@ from pathlib import Path
 from utils import *
 from post_processing import *
 import torchvision
-    
+import torch.cuda.amp as amp
 
-def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler, device):
+
+def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler, device,scaler):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -29,20 +30,30 @@ def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler
         labels = batch['label'].to(device).long()
         labels2 = batch['species'].to(device).long()
         batch_size = labels.size(0)
-        output = model(images,labels)
-        loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2)
+        if config.apex:
+            with amp.autocast():
+                output = model(images,labels)
+                loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels2)
+                # loss = criterion(output['global_feat'], output['local_feat'], output['out'] , output['species'], labels,labels2)
+        else:
+            output = model(images)
+            loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels2)
+            # loss = criterion(output['global_feat'], output['local_feat'], output['out'] , output['species'], labels,labels2)
         # record loss 
         losses.update(loss.item(), batch_size)
         if config.gradient_accumulation_steps > 1:
             loss = loss / config.gradient_accumulation_steps
         if config.apex:
-            with amp.scale_loss(loss, optimizer) as scaled_loss:
-                scaled_loss.backward()
+            scaler.scale(loss).backward()
         else:
             loss.backward()
         grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
         if (step + 1) % config.gradient_accumulation_steps == 0:
-            optimizer.step()
+            if config.apex:
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                optimizer.step()
             optimizer.zero_grad()
             global_step += 1
         # measure elapsed time
@@ -68,8 +79,11 @@ def emb_fn(valid_loader, model, device):
     model.eval()
     emb = []
     targets = []
+    y_preds = []
     start = end = time.time()
     for step, batch in enumerate(tqdm(valid_loader)):
+        # if step<3:
+        #     torchvision.utils.save_image(batch['image'],f"{config.log_DIR}/{config.exp_name}_step_val{step}.png",normalize=True,nrow=3)
         # measure data loading time
         images = batch['image'].to(device)
         labels = batch['label'].to(device).long()
@@ -77,17 +91,20 @@ def emb_fn(valid_loader, model, device):
         batch_size = labels.size(0)
         # compute loss
         with torch.no_grad():
-            y_preds = model.extract_feature(images).cpu().numpy()
-            emb.append(y_preds)
+            y = model.predict(images)
+            y_feature = y['feature'].cpu().numpy()
+            y_pred = torch.topk(y['u_id'], 5).indices.cpu().numpy()
+            emb.append(y_feature)
+            y_preds.append(y_pred)
             targets.append(labels.cpu().numpy())
     emb = np.concatenate(emb)
     targets = np.concatenate(targets)
-    
-    return emb,targets
+    y_preds = np.concatenate(y_preds)
+    return emb,targets,y_preds
 
 def valid_fn(config,model,train_loader,valid_loader,device,run_cv = True):
-    emb_v,targets_v = emb_fn(valid_loader, model, device)
-    emb_t,targets_t = emb_fn(train_loader, model, device)
+    emb_v,targets_v,y_preds = emb_fn(valid_loader, model, device)
+    emb_t,targets_t,_ = emb_fn(train_loader, model, device)
     res = {}
     res['emb_v'] = emb_v
     res['targets_v'] = targets_v
@@ -99,16 +116,23 @@ def valid_fn(config,model,train_loader,valid_loader,device,run_cv = True):
     val_embeddings = res['emb_v']
     targets = res['targets_v']
     targets_train = res['targets_t']
+    
+    ### softmax head
+    metric_softmax = [] 
+    for row in range(len(y_preds)):
+        m = map_per_image(targets[row],y_preds[row])
+        metric_softmax.append(m)
+    
+    ### arcface head
     EMB_SIZE = 512
     vals_blend = []
     labels_blend = []
     inds_blend = []
     for i in range(1):
-        vals, inds = get_topk_cossim_sub(val_embeddings[:,i*EMB_SIZE:(i+1)*EMB_SIZE], tr_embeddings[:,i*EMB_SIZE:(i+1)*EMB_SIZE], k=500)
+        vals, inds = get_topk_cossim_sub(val_embeddings, tr_embeddings, k=500)
         vals = vals.data.cpu().numpy()
         inds = inds.data.cpu().numpy()
         labels = np.concatenate([targets_train[inds[:,i]].reshape(-1,1) for i in range(inds.shape[1])], axis=1)
-
         vals_blend.append(vals)
         labels_blend.append(labels)
         inds_blend.append(inds)
@@ -119,7 +143,7 @@ def valid_fn(config,model,train_loader,valid_loader,device,run_cv = True):
     for row in range(len(vals)):
         m = map_per_image(targets[row],labels[row])
         M.append(m)
-    return np.array(M).mean()
+    return np.array(M).mean(),np.array(metric_softmax).mean()
 
 def valid_fn_acc(valid_loader, model, criterion, device):
     batch_time = AverageMeter()
