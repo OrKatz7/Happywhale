@@ -33,11 +33,11 @@ def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler
         if config.apex:
             with amp.autocast():
                 output = model(images,labels)
-                loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels2)
+                loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels)
                 # loss = criterion(output['global_feat'], output['local_feat'], output['out'] , output['species'], labels,labels2)
         else:
             output = model(images)
-            loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels2)
+            loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels)
             # loss = criterion(output['global_feat'], output['local_feat'], output['out'] , output['species'], labels,labels2)
         # record loss 
         losses.update(loss.item(), batch_size)
