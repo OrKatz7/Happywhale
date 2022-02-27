@@ -145,7 +145,11 @@ class BlockAttentionModel(nn.Module):
         x = self.fc(x)
         x = self.bn(x)
         return x
-
+    
+    def predict(self,x):
+        feature  = self.extract_feature(x)
+        u_id = self.head(feature)
+        return {"feature":feature,"u_id":u_id}
 
     def forward(self, x , label):
         """Forward"""
@@ -153,7 +157,7 @@ class BlockAttentionModel(nn.Module):
         out_face = self.face_margin_product(feature, label)
         u_id = self.head(feature)
         species = self.head2(feature)
-        return {'arcface':out_face,'species':species,"u_id":u_id}
+        return {'arcface':out_face,'species':species,"u_id":u_id,"feature":feature}
 
 
 def get_model(backbone_name='tf_efficientnet_b0_ns',num_calss_id=15587,num_calss=30):
