@@ -1,0 +1,36 @@
+Epoch 1 - avg_train_loss: 4.9482
+Epoch 1 - metric top 5 arcface: 0.46784917980570156, metric top 5 softmax 0.13260869565217392
+Epoch 1 - Save Best Score: 0.4678
+Epoch 4 - avg_train_loss: 1.8945
+Epoch 4 - metric top 5 arcface: 0.6747989329511069, metric top 5 softmax 0.34991439719700584
+Epoch 4 - Save Best Score: 0.6748
+Epoch 7 - avg_train_loss: 0.8066
+Epoch 7 - metric top 5 arcface: 0.7273272017837236, metric top 5 softmax 0.4461458831024049
+Epoch 7 - Save Best Score: 0.7273
+Epoch 9 - avg_train_loss: 0.5956
+Epoch 9 - metric top 5 arcface: 0.7454411530498487, metric top 5 softmax 0.47195612358655836
+Epoch 9 - Save Best Score: 0.7454
+Epoch 10 - avg_train_loss: 0.5724
+Epoch 10 - metric top 5 arcface: 0.7511725593247333, metric top 5 softmax 0.47405239687848383
+Epoch 10 - Save Best Score: 0.7512
+Epoch 11 - avg_train_loss: 1.2017
+Epoch 11 - metric top 5 arcface: 0.706686972447842, metric top 5 softmax 0.44120281892021024
+Epoch 12 - avg_train_loss: 1.0456
+Epoch 12 - metric top 5 arcface: 0.7031892021022457, metric top 5 softmax 0.43538381907947127
+Epoch 13 - avg_train_loss: 0.8553
+Epoch 13 - metric top 5 arcface: 0.7166467590380634, metric top 5 softmax 0.46222527472527475
+Epoch 14 - avg_train_loss: 0.7272
+Epoch 14 - metric top 5 arcface: 0.7319099378881987, metric top 5 softmax 0.4892677974199713
+Epoch 15 - avg_train_loss: 0.6204
+Epoch 15 - metric top 5 arcface: 0.7392439082656473, metric top 5 softmax 0.5182672400063705
+Epoch 16 - avg_train_loss: 0.5683
+Epoch 16 - metric top 5 arcface: 0.7516782130912567, metric top 5 softmax 0.5441093326962891
+Epoch 16 - Save Best Score: 0.7517
+Epoch 17 - avg_train_loss: 0.4620
+Epoch 17 - metric top 5 arcface: 0.7688346074215638, metric top 5 softmax 0.564751552795031
+Epoch 17 - Save Best Score: 0.7688
+Epoch 18 - avg_train_loss: 0.4241
+Epoch 18 - metric top 5 arcface: 0.767930801082975, metric top 5 softmax 0.5806657111004937
+Epoch 19 - avg_train_loss: 0.3939
+Epoch 19 - metric top 5 arcface: 0.7755534320751712, metric top 5 softmax 0.5903627169931518
+Epoch 19 - Save Best Score: 0.7756
