@@ -30,14 +30,19 @@ def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler
         labels = batch['label'].to(device).long()
         labels2 = batch['species'].to(device).long()
         batch_size = labels.size(0)
+        loss = 0
         if config.apex:
             with amp.autocast():
                 output = model(images,labels)
-                loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels)
+                for key in criterion.keys():
+                    loss+= criterion[key]['w'] * criterion[key]['criterion'](output[key], batch[criterion[key]['label']].to(device).long())
+                # loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels2)
                 # loss = criterion(output['global_feat'], output['local_feat'], output['out'] , output['species'], labels,labels2)
         else:
             output = model(images)
-            loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels)
+            for key in criterion.keys():
+                loss+= criterion[key]['w'] * criterion[key]['criterion'](output[key], batch[criterion[key]['label']].to(device).long())
+            # loss = config.arcface_w*criterion(output['arcface'], labels) + config.species_w*criterion(output['species'], labels2) + config.id_w*criterion(output['u_id'], labels2)
             # loss = criterion(output['global_feat'], output['local_feat'], output['out'] , output['species'], labels,labels2)
         # record loss 
         losses.update(loss.item(), batch_size)
