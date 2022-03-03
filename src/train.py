@@ -29,6 +29,7 @@ def train_one_fold(config,LOGGER,folds,fold=0):
                                   data_root_path=config.data_root_path,
                                   crop_p = config.crop_p,
                                   crop_csv_path = config.crop_csv_path,
+                                  crop_backfin_csv_path = config.crop_backfin_csv_path,
                                   use_crop_for_val = config.use_crop_for_val)
         
     model = eval(config.model['f_class'])(**config.model['args']).to(config.device)
@@ -36,7 +37,10 @@ def train_one_fold(config,LOGGER,folds,fold=0):
         model.load_state.dict(torch.load(config.load_from[fold])['model'])
     optimizer = eval(config.optimizer['f_class'])(model.parameters(),**config.optimizer['args'])
     scheduler = eval(config.scheduler['f_class'])(optimizer,**config.scheduler['args'])
-    criterion = eval(config.criterion['f_class'])(**config.criterion['args'])
+    criterion = {}
+    for c in config.criterion:
+        criterion[c['name']] = {"criterion": eval(c['f_class'])(**c['args']), 'w':c['w'],"label":c['label']}
+    # criterion = eval(config.criterion['f_class'])(**config.criterion['args'])
     scaler = amp.GradScaler()
     if config.swa:
         swa_start = config.swa_start
@@ -56,9 +60,6 @@ def train_one_fold(config,LOGGER,folds,fold=0):
             scheduler.step()
         if epoch % (config.val_freq) == 0 or epoch >= config.val_epoch_freq:
             score,score_softmax = valid_fn(config,model,data['train_loader_emb'],data['valid_loader'],device=config.device,run_cv = True)
-            # if isinstance(scheduler, ReduceLROnPlateau):
-            #     scheduler.step(avg_val_loss)
-            # else:
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}')
             LOGGER.info(f'Epoch {epoch+1} - metric top 5 arcface: {score}, metric top 5 softmax {score_softmax}')
             if score > best_score:
@@ -86,4 +87,3 @@ if __name__ == '__main__':
     config = eval(args.config)
     seed_torch(config.seed)
     main(config)
-
