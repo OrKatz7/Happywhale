@@ -69,13 +69,13 @@ def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler
                   'Data {data_time.val:.3f} ({data_time.avg:.3f}) '
                   'Elapsed {remain:s} '
                   'Loss: {loss.val:.4f}({loss.avg:.4f}) '
-                  'Grad: {grad_norm:.4f}  '
+                  'Grad: {grad_norm:.4f}  lr: {lr}'
                   #'LR: {lr:.6f}  '
                   .format(
                    epoch+1, step, len(train_loader), batch_time=batch_time,
                    data_time=data_time, loss=losses,
                    remain=timeSince(start, float(step+1)/len(train_loader)),
-                   grad_norm=grad_norm,
+                   grad_norm=grad_norm,lr=optimizer.param_groups[0]['lr']
                    #lr=scheduler.get_lr()[0],
                    ))
     return losses.avg

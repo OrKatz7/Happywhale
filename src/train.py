@@ -11,7 +11,8 @@ import models
 import time
 from swa_utils import AveragedModel, SWALR,update_bn
 import torch.cuda.amp as amp
-
+import scheduler
+import optim
 def debug_mode(config,folds):
     if config.debug:
         folds = folds.sample(n=1000, random_state=config.seed).reset_index(drop=True)
@@ -64,7 +65,8 @@ def train_one_fold(config,LOGGER,folds,fold=0):
             LOGGER.info(f'Epoch {epoch+1} - metric top 5 arcface: {score}, metric top 5 softmax {score_softmax}')
             if score > best_score:
                 best_score = score
-                LOGGER.info(f'Epoch {epoch+1} - Save Best Score: {best_score:.4f}')
+                llr = optimizer.param_groups[0]['lr']
+                LOGGER.info(f'Epoch {epoch+1} - Save Best Score: {best_score:.4f}, lr: {llr}')
                 torch.save({'model': model.state_dict(), },
                                     config.save_dir+f'{config.exp_name}_fold{fold}_best.pth')
     if config.swa:
@@ -87,3 +89,10 @@ if __name__ == '__main__':
     config = eval(args.config)
     seed_torch(config.seed)
     main(config)
+
+    
+
+
+
+            
+    
