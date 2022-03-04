@@ -15,3 +15,6 @@ import train_configs.config14
 import train_configs.config15
 ## work only from here
 import train_configs.config16
+import train_configs.config17
+import train_configs.config18
+import train_configs.config19
