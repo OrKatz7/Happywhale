@@ -5,3 +5,7 @@ import models.utils
 import models.triplet_loss
 import models.lovasz
 import models.swin
+import models.convnext
+import models.resnext
+
+
