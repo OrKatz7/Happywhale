@@ -85,6 +85,7 @@ def train_one_fold(config,LOGGER,folds,fold=0):
 def main(config):
     LOGGER = init_logger(log_file=f'{config.log_DIR}/{config.exp_name}.log')
     folds = pd.read_csv(config.kfold_csv)
+    
     folds = fix_species(folds) #https://www.kaggle.com/c/happy-whale-and-dolphin/discussion/305574
     config,folds = debug_mode(config,folds)
     for fold in range(config.n_folds):
