@@ -20,6 +20,13 @@ def debug_mode(config,folds):
         config.n_folds = 1
     return config,folds
 
+def fix_species(folds):
+    folds.species.replace({"globis": "short_finned_pilot_whale",
+                              "pilot_whale": "short_finned_pilot_whale",
+                              "kiler_whale": "killer_whale",
+                              "bottlenose_dolpin": "bottlenose_dolphin"}, inplace=True)
+    return folds
+
 def train_one_fold(config,LOGGER,folds,fold=0):
     data = GetTrainDataLoader(folds=folds,
                                   fold=fold,
@@ -78,6 +85,7 @@ def train_one_fold(config,LOGGER,folds,fold=0):
 def main(config):
     LOGGER = init_logger(log_file=f'{config.log_DIR}/{config.exp_name}.log')
     folds = pd.read_csv(config.kfold_csv)
+    folds = fix_species(folds)
     config,folds = debug_mode(config,folds)
     for fold in range(config.n_folds):
         train_one_fold(config,LOGGER,folds,fold)
