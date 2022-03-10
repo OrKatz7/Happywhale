@@ -13,8 +13,16 @@ import train_configs.config12
 import train_configs.config13
 import train_configs.config14
 import train_configs.config15
-## work only from here
 import train_configs.config16
+import train_configs.config16v2
+import train_configs.config16v2sampler
+import train_configs.config16v3sampler
+import train_configs.config16v4sampler
+import train_configs.config16v5sampler
+import train_configs.config16v6sampler
+import train_configs.config16pretrain
 import train_configs.config17
 import train_configs.config18
 import train_configs.config19
+import train_configs.config20
+
