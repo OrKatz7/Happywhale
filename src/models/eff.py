@@ -124,12 +124,20 @@ class BlockAttentionModel(nn.Module):
         else:
             raise NotImplementedError(f'Invalid pooling type: {self.pooling}')
         fc_dim = 512
+        self.fc_dim = fc_dim
         self.fc = nn.Linear(self.n_features, fc_dim)
         self.bn = nn.BatchNorm1d(fc_dim)    
         self.face_margin_product = ArcMarginProduct(fc_dim, num_calss_id, s=s, m=margin)
         self.head = nn.Linear(fc_dim, num_calss_id)
         self.head2 = nn.Linear(fc_dim, num_calss)
-
+        
+    def reset_head(self,num_calss_id):
+        self.face_margin_product = ArcMarginProduct(self.fc_dim, num_calss_id, s=30.0, m=0.0)
+        self.head = nn.Linear(self.fc_dim, num_calss_id)
+        
+    def reset_head2(self,num_calss):
+        self.head2 = nn.Linear(self.fc_dim, num_calss)   
+        
     def _init_params(self):
         nn.init.xavier_normal_(self.fc.weight)
         if type(self.fc.bias) == torch.nn.parameter.Parameter:
@@ -163,10 +171,7 @@ class BlockAttentionModel(nn.Module):
 def get_model(backbone_name='tf_efficientnet_b0_ns',num_calss_id=15587,num_calss=30):
     # create backbone
 
-    if backbone_name in ['tf_efficientnet_b0_ns', 'tf_efficientnet_b1_ns',
-                         'tf_efficientnet_b2_ns', 'tf_efficientnet_b3_ns',
-                         'tf_efficientnet_b4_ns', 'tf_efficientnet_b5_ns',
-                         'tf_efficientnet_b6_ns', 'tf_efficientnet_b7_ns']:
+    if 'efficientnet' in backbone_name:
         kwargs = {}
         if True:
             act_layer = get_act_layer('swish')
