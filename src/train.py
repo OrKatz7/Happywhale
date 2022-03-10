@@ -20,13 +20,6 @@ def debug_mode(config,folds):
         config.n_folds = 1
     return config,folds
 
-def fix_species(folds):
-    folds.species.replace({"globis": "short_finned_pilot_whale",
-                              "pilot_whale": "short_finned_pilot_whale",
-                              "kiler_whale": "killer_whale",
-                              "bottlenose_dolpin": "bottlenose_dolphin"}, inplace=True)
-    return folds
-
 def train_one_fold(config,LOGGER,folds,fold=0):
     data = GetTrainDataLoader(folds=folds,
                                   fold=fold,
@@ -38,11 +31,17 @@ def train_one_fold(config,LOGGER,folds,fold=0):
                                   crop_p = config.crop_p,
                                   crop_csv_path = config.crop_csv_path,
                                   crop_backfin_csv_path = config.crop_backfin_csv_path,
-                                  use_crop_for_val = config.use_crop_for_val)
+                                  use_crop_for_val = config.use_crop_for_val,
+                                  use_sampler = config.sampler)
         
     model = eval(config.model['f_class'])(**config.model['args']).to(config.device)
     if config.load_from[fold] is not None:
-        model.load_state.dict(torch.load(config.load_from[fold])['model'])
+        model.reset_head(config.old_model_head_dim)
+        model.load_state_dict(torch.load(config.load_from[fold])['model'])
+        model.reset_head(config.model['args']['num_calss_id'])
+        model.to(config.device)
+        print(f"load {config.load_from[fold]}")
+        
     optimizer = eval(config.optimizer['f_class'])(model.parameters(),**config.optimizer['args'])
     scheduler = eval(config.scheduler['f_class'])(optimizer,**config.scheduler['args'])
     criterion = {}
@@ -59,6 +58,7 @@ def train_one_fold(config,LOGGER,folds,fold=0):
     best_score = 0.
     best_loss = np.inf
     for epoch in range(config.epochs):
+        data['train_loader'].sampler.set_epoch(epoch)
         start_time = time.time()
         avg_loss = train_fn(config,data['train_loader'], model, criterion , optimizer, epoch, scheduler, config.device,scaler)
         if epoch > swa_start and config.swa:
@@ -85,8 +85,6 @@ def train_one_fold(config,LOGGER,folds,fold=0):
 def main(config):
     LOGGER = init_logger(log_file=f'{config.log_DIR}/{config.exp_name}.log')
     folds = pd.read_csv(config.kfold_csv)
-    
-    folds = fix_species(folds) #https://www.kaggle.com/c/happy-whale-and-dolphin/discussion/305574
     config,folds = debug_mode(config,folds)
     for fold in range(config.n_folds):
         train_one_fold(config,LOGGER,folds,fold)
