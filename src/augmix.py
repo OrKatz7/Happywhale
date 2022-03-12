@@ -186,4 +186,20 @@ class RandomAugMix(ImageOnlyTransform):
         return image
 
 
-
+'''
+    train_transforms = albumentations.Compose([
+            albumentations.Resize(size//2, size),
+            albumentations.OneOf([
+                    RandomAugMix(severity=3, width=3, alpha=1., p=0.75),
+                    albumentations.ImageCompression(quality_lower=95, quality_upper=100),
+                    albumentations.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=10, border_mode=0, p=0.75),
+                ], p=1.0),
+            albumentations.HorizontalFlip(p=0.5),
+            albumentations.Cutout(max_h_size=int(size//2 * 0.25), max_w_size=int(size * 0.25), num_holes=1, p=0.5),
+            albumentations.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            ),
+            ToTensorV2(),
+        ])
+'''
