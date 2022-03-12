@@ -99,6 +99,7 @@ class BlockAttentionModel(nn.Module):
         n_features: int,
         margin=0.0,
         s=30.0,
+        has_used=False
     ):
         """Initialize"""
         super(BlockAttentionModel, self).__init__()
@@ -129,6 +130,10 @@ class BlockAttentionModel(nn.Module):
         self.face_margin_product = ArcMarginProduct(fc_dim, num_calss_id, s=s, m=margin)
         self.head = nn.Linear(fc_dim, num_calss_id)
         self.head2 = nn.Linear(fc_dim, num_calss)
+        self.has_used=has_used
+        if has_used:
+            self.is_new=nn.Linear(1,1)
+            self.new_pool=nn.AdaptiveMaxPool1d(1)
 
     def _init_params(self):
         nn.init.xavier_normal_(self.fc.weight)
@@ -149,18 +154,23 @@ class BlockAttentionModel(nn.Module):
     def predict(self,x):
         feature  = self.extract_feature(x)
         u_id = self.head(feature)
-        return {"feature":feature,"u_id":u_id}
+        species = self.head2(feature)
+        return {"feature":feature,"u_id":u_id,'species':species}
 
     def forward(self, x , label):
         """Forward"""
         feature  = self.extract_feature(x)
-        out_face = self.face_margin_product(feature, label)
+        out_face = self.face_margin_product(feature, torch.where(label>=0,label,0))
+        if self.has_used:
+            out_new=self.is_new(self.new_pool(out_face))
+        else:
+            out_new=None
         u_id = self.head(feature)
         species = self.head2(feature)
-        return {'arcface':out_face,'species':species,"u_id":u_id,"feature":feature}
+        return {'arcface':out_face,'species':species,"u_id":u_id,"feature":feature,"not_new":out_new}
 
 
-def get_model(backbone_name='tf_efficientnet_b0_ns',num_calss_id=15587,num_calss=30):
+def get_model(backbone_name='tf_efficientnet_b0_ns',num_calss_id=15587,num_calss=30,has_used=False):
     # create backbone
 
     if backbone_name in ['tf_efficientnet_b0_ns', 'tf_efficientnet_b1_ns',
@@ -179,6 +189,6 @@ def get_model(backbone_name='tf_efficientnet_b0_ns',num_calss_id=15587,num_calss
     else:
         raise NotImplementedError(f'not implemented yet: {backbone_name}')
 
-    model = BlockAttentionModel(backbone = backbone, n_features = n_features , num_calss_id=num_calss_id,num_calss=num_calss)
+    model = BlockAttentionModel(backbone = backbone, n_features = n_features , num_calss_id=num_calss_id,num_calss=num_calss,has_used=has_used)
 
     return model

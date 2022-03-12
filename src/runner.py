@@ -80,11 +80,12 @@ def train_fn(config,train_loader, model, criterion , optimizer, epoch, scheduler
                    ))
     return losses.avg
 
-def emb_fn(valid_loader, model, device):
+def emb_fn(valid_loader, model, device,valid=True):
     model.eval()
     emb = []
     targets = []
     y_preds = []
+    y_species = []
     start = end = time.time()
     for step, batch in enumerate(tqdm(valid_loader)):
         # if step<3:
@@ -92,33 +93,39 @@ def emb_fn(valid_loader, model, device):
         # measure data loading time
         images = batch['image'].to(device)
         labels = batch['label'].to(device).long()
-        labels2 = batch['species'].to(device).long()
+        labels2 = batch['species'] #.to(device).long()
         batch_size = labels.size(0)
         # compute loss
         with torch.no_grad():
             y = model.predict(images)
             y_feature = y['feature'].cpu().numpy()
             y_pred = torch.topk(y['u_id'], 5).indices.cpu().numpy()
+            y_species.append(y['species'].max(1).indices.cpu().numpy() if valid else labels2)
             emb.append(y_feature)
             y_preds.append(y_pred)
             targets.append(labels.cpu().numpy())
     emb = np.concatenate(emb)
     targets = np.concatenate(targets)
     y_preds = np.concatenate(y_preds)
-    return emb,targets,y_preds
+    y_species = np.concatenate(y_species)
+    return emb,targets,y_preds,y_species
 
-def valid_fn(config,model,train_loader,valid_loader,device,run_cv = True):
-    emb_v,targets_v,y_preds = emb_fn(valid_loader, model, device)
-    emb_t,targets_t,_ = emb_fn(train_loader, model, device)
+def valid_fn(config,model,train_loader,valid_loader,device,run_cv = True,use_new=False,use_species=False):
+    emb_v,targets_v,y_preds,y_species = emb_fn(valid_loader, model, device,valid=True)
+    emb_t,targets_t,_,t_species = emb_fn(train_loader, model, device,valid=False)
     res = {}
     res['emb_v'] = emb_v
     res['targets_v'] = targets_v
     res['emb_t'] = emb_t
     res['targets_t'] = targets_t
+    res['species_v'] = y_species
+    res['species_t'] = t_species
     if not run_cv: 
         return res
     tr_embeddings = res['emb_t']
     val_embeddings = res['emb_v']
+    val_species=res['species_v']
+    tr_species=res['species_t']
     targets = res['targets_v']
     targets_train = res['targets_t']
     
@@ -133,8 +140,10 @@ def valid_fn(config,model,train_loader,valid_loader,device,run_cv = True):
     vals_blend = []
     labels_blend = []
     inds_blend = []
+    
     for i in range(1):
-        vals, inds = get_topk_cossim_sub(val_embeddings, tr_embeddings, k=500)
+        vals, inds = get_topk_cossim_sub(val_embeddings, tr_embeddings, k=500) if not use_species \
+            else get_topk_cossim_species(val_embeddings, tr_embeddings, val_species, tr_species, k=500)
         vals = vals.data.cpu().numpy()
         inds = inds.data.cpu().numpy()
         labels = np.concatenate([targets_train[inds[:,i]].reshape(-1,1) for i in range(inds.shape[1])], axis=1)
@@ -144,9 +153,11 @@ def valid_fn(config,model,train_loader,valid_loader,device,run_cv = True):
     vals = np.concatenate(vals_blend, axis=1)
     inds = np.concatenate(inds_blend, axis=1)
     labels = np.concatenate(labels_blend, axis=1)
+    th=vals[:,0].mean()-vals[:,0].std()
+    print('th:',vals[:,0].mean(),th)
     M = []
     for row in range(len(vals)):
-        m = map_per_image(targets[row],labels[row])
+        m = map_per_image(targets[row],labels[row],vals=vals[row] if use_new else None, th=th)
         M.append(m)
     return np.array(M).mean(),np.array(metric_softmax).mean()
 

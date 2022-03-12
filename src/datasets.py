@@ -40,14 +40,20 @@ defult_val_trms = albumentations.Compose([
         ])
 
 class TrainDataset(Dataset):
-    def __init__(self, df, TRAIN_PATH, transform=None,crop_p=None,crop_csv_path=None,crop_backfin_csv_path = None,mode='train'):
-        self.df = df
+    def __init__(self, df, TRAIN_PATH, transform=None,crop_p=None,crop_csv_path=None,crop_backfin_csv_path = None,mode='train',
+                 new_targets=False,hide=0):
+        self.df = df.copy()
         self.TRAIN_PATH = TRAIN_PATH
         self.file_names = df['image'].values
         self.labels = df['classes'].values
         self.labels_s = df['classes_species'].values
+        self.folds=df['fold'].values
+        if hide>0:
+            df.not_seen=(df.num_images>hide) & (df.not_seen)
+        self.not_seen=df['not_seen'].values
         self.transform = transform
         self.mode = mode
+        self.new_targets=new_targets
         if crop_csv_path is not None and crop_p is not None:
             self.crop_df = pd.read_csv(crop_csv_path)
             self.crop_backfin_df = pd.read_csv(crop_backfin_csv_path)
@@ -88,9 +94,11 @@ class TrainDataset(Dataset):
         if self.transform:
             augmented = self.transform(image=image)
             image = augmented['image']
-        label = torch.tensor(self.labels[idx]).long()
+        label = torch.tensor(-1 if (self.new_targets and self.not_seen[idx]==0) else self.labels[idx]).long()
         label_species = torch.tensor(self.labels_s[idx]).long()
-        return {'image':image, "label":label,"species":label_species}
+        fold = torch.tensor(self.folds[idx]).long()
+        not_seen = torch.tensor(self.not_seen[idx]).long()
+        return {'image':image, "label":label,"species":label_species,"fold":fold,"not_seen":not_seen}
     
 
 class TestDataset(Dataset):
@@ -138,15 +146,27 @@ class TestDataset(Dataset):
         return {"file_name":file_name,'image':image, "label":torch.empty([]),"species":torch.empty([])}
     
     
-def GetTrainDataLoader(folds,fold,train_transforms,val_transforms,batch_size,num_workers,data_root_path,crop_p,crop_csv_path,crop_backfin_csv_path,use_crop_for_val):
-    trn_idx = folds[folds['fold'] != fold].index
-    val_idx = folds[folds['fold'] == fold].index
+def GetTrainDataLoader(folds,fold,train_transforms,val_transforms,batch_size,num_workers,data_root_path,
+                       crop_p,crop_csv_path,crop_backfin_csv_path,use_crop_for_val,
+                       singles_in_fold=False,no_single_val=True,singles_in_train=True,min_num_in_train=1,train_not_seen=False):
+    # if train_not_seen:
+    #     folds=folds.copy()
+    #     folds.not_seen=(folds.num_images>min_num_in_train).to(torch.long)
+    if not singles_in_train:
+        trn_idx = folds[(folds['fold'] != fold) & (folds['num_images']>min_num_in_train)].index
+        val_idx =folds[(folds['fold'] == fold) & (folds['num_images']>min_num_in_train)].index #if no_single_val else folds[folds['singlet_fold'] == fold].index
+    elif singles_in_fold:
+        trn_idx = folds[(folds['fold'] != fold) & (folds['not_seen']==1)].index
+        val_idx =folds[(folds['fold'] == fold) | (folds['not_seen']==0)].index #if no_single_val else folds[folds['singlet_fold'] == fold].index
+    else:
+        trn_idx = folds[folds['fold'] != fold].index
+        val_idx = folds[folds['fold'] == fold].index
 
     train_folds = folds.loc[trn_idx].reset_index(drop=True)
     valid_folds = folds.loc[val_idx].reset_index(drop=True)
     
-    train_dataset = TrainDataset(train_folds,data_root_path, transform=train_transforms,crop_p=crop_p,crop_csv_path=crop_csv_path,crop_backfin_csv_path=crop_backfin_csv_path)
-    valid_dataset = TrainDataset(valid_folds, data_root_path,transform=val_transforms,crop_p=1 if use_crop_for_val else 0,crop_csv_path=crop_csv_path,crop_backfin_csv_path=crop_backfin_csv_path)
+    train_dataset = TrainDataset(train_folds,data_root_path, transform=train_transforms,crop_p=crop_p,crop_csv_path=crop_csv_path,crop_backfin_csv_path=crop_backfin_csv_path,hide=min_num_in_train if train_not_seen else 0)
+    valid_dataset = TrainDataset(valid_folds, data_root_path,transform=val_transforms,crop_p=1 if use_crop_for_val else 0,crop_csv_path=crop_csv_path,crop_backfin_csv_path=crop_backfin_csv_path,new_targets=singles_in_fold)
     train_dataset_emb = TrainDataset(train_folds,data_root_path, transform=val_transforms,crop_p=1 if use_crop_for_val else 0,crop_csv_path=crop_csv_path,crop_backfin_csv_path=crop_backfin_csv_path)
 
     train_loader = DataLoader(train_dataset, 

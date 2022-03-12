@@ -13,6 +13,7 @@ from swa_utils import AveragedModel, SWALR,update_bn
 import torch.cuda.amp as amp
 import scheduler
 import optim
+import train_configs
 def debug_mode(config,folds):
     if config.debug:
         folds = folds.sample(n=1000, random_state=config.seed).reset_index(drop=True)
@@ -31,7 +32,11 @@ def train_one_fold(config,LOGGER,folds,fold=0):
                                   crop_p = config.crop_p,
                                   crop_csv_path = config.crop_csv_path,
                                   crop_backfin_csv_path = config.crop_backfin_csv_path,
-                                  use_crop_for_val = config.use_crop_for_val)
+                                  use_crop_for_val = config.use_crop_for_val,
+                                  singles_in_fold=hasattr(config,'singles_in_fold') and config.singles_in_fold,
+                                  singles_in_train=hasattr(config,'singles_in_train') and config.singles_in_train,
+                                  min_num_in_train=config.min_num_in_train if hasattr(config,'singles_in_train') else 1,
+                                  train_not_seen=hasattr(config,'train_not_seen') and config.train_not_seen)
         
     model = eval(config.model['f_class'])(**config.model['args']).to(config.device)
     if config.load_from[fold] is not None:
@@ -60,7 +65,9 @@ def train_one_fold(config,LOGGER,folds,fold=0):
         else:
             scheduler.step()
         if epoch % (config.val_freq) == 0 or epoch >= config.val_epoch_freq:
-            score,score_softmax = valid_fn(config,model,data['train_loader_emb'],data['valid_loader'],device=config.device,run_cv = True)
+            score,score_softmax = valid_fn(config,model,data['train_loader_emb'],data['valid_loader'],device=config.device,
+                                           run_cv = True,use_new=hasattr(config,'csv_use_new') and config.csv_use_new,
+                                           use_species=hasattr(config,'valid_use_species') and config.valid_use_species)
             LOGGER.info(f'Epoch {epoch+1} - avg_train_loss: {avg_loss:.4f}')
             LOGGER.info(f'Epoch {epoch+1} - metric top 5 arcface: {score}, metric top 5 softmax {score_softmax}')
             if score > best_score:
@@ -71,7 +78,9 @@ def train_one_fold(config,LOGGER,folds,fold=0):
                                     config.save_dir+f'{config.exp_name}_fold{fold}_best.pth')
     if config.swa:
         update_bn(data['train_loader_emb'], swa_model,device=config.device)
-        score = valid_fn(config,swa_model.module,data['train_loader_emb'],data['valid_loader'],device=config.device,run_cv = True)
+        score = valid_fn(config,swa_model.module,data['train_loader_emb'],data['valid_loader'],device=config.device,
+                         run_cv = True, use_new=hasattr(config,'csv_use_new') and config.csv_use_new,
+                         use_species=hasattr(config,'valid_use_species') and config.valid_use_species)
         LOGGER.info(f'SWA - metric top 5: {score}')
         torch.save({'model': swa_model.module.state_dict(), },
                                     config.save_dir+f'{config.exp_name}_fold{fold}_swa.pth')
@@ -86,7 +95,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='train pipeline')
     parser.add_argument('--config', type=str)
     args = parser.parse_args()
-    config = eval(args.config)
+    print(args.config)
+    config = eval(f"train_configs.{args.config}.config")
     seed_torch(config.seed)
     main(config)
 

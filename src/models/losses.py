@@ -43,6 +43,13 @@ class LabelSmoothingLoss(nn.Module):
       loss = F.cross_entropy(logits, labels)
     return loss
 
+class SeenBCEwithLogic(nn.Module):
+    def __init__(self,*args,**kwargs):
+        super(SeenBCEwithLogic,self).__init__()
+        self.bce=nn.BCEWithLogitsLoss(*args,**kwargs)
+    def forward(self,logits,labels,*args,**kwargs):
+        return self.bce(logits,(labels>=0).to(torch.float).unsqueeze(1),*args,**kwargs)
+
 class LabelSmoothingLossV1(nn.modules.Module):
   def __init__(self):
     super(LabelSmoothingLossV1, self).__init__()
