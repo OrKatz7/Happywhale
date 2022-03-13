@@ -37,7 +37,7 @@ def train_one_fold(config,LOGGER,folds,fold=0):
                                   singles_in_train=hasattr(config,'singles_in_train') and config.singles_in_train,
                                   min_num_in_train=config.min_num_in_train if hasattr(config,'singles_in_train') else 1,
                                   train_not_seen=hasattr(config,'train_not_seen') and config.train_not_seen,
-								  use_sampler = config.sampler)
+                                  use_sampler = config.sampler)
         
     model = eval(config.model['f_class'])(**config.model['args']).to(config.device)
     if config.load_from[fold] is not None:

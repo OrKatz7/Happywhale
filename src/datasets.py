@@ -74,7 +74,7 @@ class StepSampler(Sampler):
         print(f"sampler set epoch {epoch}")
 
 class TrainDataset(Dataset):
-    def __init__(self, df, TRAIN_PATH, transform=None,crop_p=None,crop_csv_path=None,crop_backfin_csv_path = None,mode='train'):
+    def __init__(self, df, TRAIN_PATH, transform=None,crop_p=None,crop_csv_path=None,crop_backfin_csv_path = None,mode='train',load_all=False,
                  new_targets=False,hide=0):
         self.df = df.copy()
         self.TRAIN_PATH = TRAIN_PATH
@@ -82,6 +82,7 @@ class TrainDataset(Dataset):
         self.labels = df['classes'].values
         self.labels_s = df['classes_species'].values
         self.folds=df['fold'].values
+        self.count=df['count'].values
         if hide>0:
             df.not_seen=(df.num_images>hide) & (df.not_seen)
         self.not_seen=df['not_seen'].values
@@ -95,7 +96,7 @@ class TrainDataset(Dataset):
             self.use_crop = True
         else:
             self.use_crop = False
-        self.x,self.y,self.y_species,y_folds,y_not_seen = [],[],[],[],[]
+        self.x,self.y,self.y_species,self.y_folds,self.y_not_seen = [],[],[],[],[]
         if load_all:
             self.load_all()
         self.load_all = load_all
@@ -118,8 +119,8 @@ class TrainDataset(Dataset):
             self.x.append(image)
             self.y.append(torch.tensor(self.labels[idx]).long())
             self.y_species.append(torch.tensor(self.labels_s[idx]).long())
-			self.y_folds.append(torch.tensor(self.folds[idx]).long())
-			self.y_not_seen.append(torch.tensor(self.not_seen[idx]).long())
+            self.y_folds.append(torch.tensor(self.folds[idx]).long())
+            self.y_not_seen.append(torch.tensor(self.not_seen[idx]).long())
     def __len__(self):
         return len(self.df)
     
@@ -153,15 +154,17 @@ class TrainDataset(Dataset):
             if self.transform:
                 augmented = self.transform(image=image)
                 image = augmented['image']
-        label = torch.tensor(self.labels[idx]).long()
+            label = torch.tensor(self.labels[idx]).long()
             label_species = torch.tensor(self.labels_s[idx]).long()
+            fold=torch.tensor(self.folds[idx]).long()
+            not_seen=torch.tensor(self.not_seen[idx]).long()
         else:
             image = self.x[idx]
             label = torch.tensor([-1]).long() if (self.new_targets and self.y_not_seen[idx]==0) else self.y[idx]
             label_species = self.y_species[idx]
-			fold = self.y_folds[idx])
-			not_seen=self.y_not_seen[idx])
-			
+            fold = self.y_folds[idx]
+            not_seen=self.y_not_seen[idx]
+
             if image is None or image.shape[0] == 0 or image.shape[1] == 0:
                 image = cv2.imread(self.file_names[idx])
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -218,7 +221,7 @@ class TestDataset(Dataset):
     
 def GetTrainDataLoader(folds,fold,train_transforms,val_transforms,batch_size,num_workers,data_root_path,
                        crop_p,crop_csv_path,crop_backfin_csv_path,use_crop_for_val,
-					   ,use_sampler=True,epochs=25,
+                       use_sampler=True,epochs=25,
                        singles_in_fold=False,no_single_val=True,singles_in_train=True,min_num_in_train=1,train_not_seen=False):
     # if train_not_seen:
     #     folds=folds.copy()

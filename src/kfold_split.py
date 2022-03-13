@@ -26,8 +26,12 @@ def add_columns(input_csv,output_csv,n_fold=5):
     folds = pd.read_csv(input_csv)
     folds['singlet_fold']=np.where(folds.fold==-1,np.random.randint(0,n_fold,(folds.shape[0],)),folds.fold)
     folds['not_seen']=np.where(folds.fold==-1,np.random.randint(0,2,(folds.shape[0],)),1)
+    if "num_images" in folds.columns:
+        folds=folds.drop(["num_images"],axis=1)
+        print("droping num_images")
     df=folds[['image','individual_id']].groupby('individual_id').count().rename(columns={"image": "num_images"}).reset_index()
     folds=folds.merge(df,on='individual_id',how='left')
+    folds['count']=folds['num_images']
     folds.to_csv(output_csv,index=False)
     print(folds.sample(10))
 
