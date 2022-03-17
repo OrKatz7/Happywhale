@@ -1,0 +1,53 @@
+Epoch 1 - avg_train_loss: 3.3740
+Epoch 1 - metric top 5 arcface: 0.6004538939321548, metric top 5 softmax 0.19633898709985667
+Epoch 1 - Save Best Score: 0.6005, lr: 9.755527298894293e-05
+Epoch 4 - avg_train_loss: 0.6092
+Epoch 4 - metric top 5 arcface: 0.7437490046185697, metric top 5 softmax 0.47604714126453257
+Epoch 4 - Save Best Score: 0.7437, lr: 6.548539886902863e-05
+Epoch 7 - avg_train_loss: 0.4346
+Epoch 7 - metric top 5 arcface: 0.7647933588150979, metric top 5 softmax 0.5392040930084409
+Epoch 7 - Save Best Score: 0.7648, lr: 2.069012664799097e-05
+Epoch 10 - avg_train_loss: 0.2641
+Epoch 10 - metric top 5 arcface: 0.7855729415512025, metric top 5 softmax 0.5793100015926104
+Epoch 10 - Save Best Score: 0.7856, lr: 0.0001
+Epoch 11 - avg_train_loss: 0.7020
+Epoch 11 - metric top 5 arcface: 0.7641463608854913, metric top 5 softmax 0.55200270743749
+Epoch 12 - avg_train_loss: 0.4715
+Epoch 12 - metric top 5 arcface: 0.7543776875298616, metric top 5 softmax 0.5583532409619365
+Epoch 13 - avg_train_loss: 0.3770
+Epoch 13 - metric top 5 arcface: 0.7686355311355312, metric top 5 softmax 0.5882963051441313
+Epoch 14 - avg_train_loss: 0.2972
+Epoch 14 - metric top 5 arcface: 0.779805701544832, metric top 5 softmax 0.6207835642618252
+Epoch 15 - avg_train_loss: 0.2461
+Epoch 15 - metric top 5 arcface: 0.7953455964325531, metric top 5 softmax 0.6597965440356744
+Epoch 15 - Save Best Score: 0.7953, lr: 5.0050000000000004e-05
+Epoch 16 - avg_train_loss: 0.2172
+Epoch 16 - metric top 5 arcface: 0.7930383022774327, metric top 5 softmax 0.6708472686733556
+Epoch 17 - avg_train_loss: 0.1889
+Epoch 17 - metric top 5 arcface: 0.8037227265488135, metric top 5 softmax 0.6877846790890269
+Epoch 17 - Save Best Score: 0.8037, lr: 2.069012664799097e-05
+Epoch 18 - avg_train_loss: 0.1721
+Epoch 18 - metric top 5 arcface: 0.8062549769071508, metric top 5 softmax 0.6930104315973881
+Epoch 18 - Save Best Score: 0.8063, lr: 9.639601130971381e-06
+Epoch 19 - avg_train_loss: 0.4382
+Epoch 19 - metric top 5 arcface: 0.80643215480172, metric top 5 softmax 0.6914636088549132
+Epoch 19 - Save Best Score: 0.8064, lr: 2.544727011057081e-06
+Epoch 20 - avg_train_loss: 0.2693
+Epoch 20 - metric top 5 arcface: 0.8110268354833573, metric top 5 softmax 0.6940695174390826
+Epoch 20 - Save Best Score: 0.8110, lr: 0.0001
+Epoch 21 - avg_train_loss: 0.5355
+Epoch 21 - metric top 5 arcface: 0.7808448797579232, metric top 5 softmax 0.633817088708393
+Epoch 22 - avg_train_loss: 0.4007
+Epoch 22 - metric top 5 arcface: 0.7802217709826406, metric top 5 softmax 0.6336060678451984
+Epoch 23 - avg_train_loss: 0.3622
+Epoch 23 - metric top 5 arcface: 0.7782548972766363, metric top 5 softmax 0.6395246058289537
+Epoch 24 - avg_train_loss: 0.3356
+Epoch 24 - metric top 5 arcface: 0.7832676381589426, metric top 5 softmax 0.6536112438286352
+Epoch 25 - avg_train_loss: 0.2904
+Epoch 25 - metric top 5 arcface: 0.792433110367893, metric top 5 softmax 0.6670867176301959
+Epoch 1 - avg_train_loss: 3.3243
+Epoch 1 - metric top 5 arcface: 0.598892094402372, metric top 5 softmax 0.21291421244540612
+Epoch 1 - Save Best Score: 0.5989, lr: 9.755527298894293e-05
+Epoch 4 - avg_train_loss: 0.6161
+Epoch 4 - metric top 5 arcface: 0.7447489682253476, metric top 5 softmax 0.4878070280883119
+Epoch 4 - Save Best Score: 0.7447, lr: 6.548539886902863e-05
