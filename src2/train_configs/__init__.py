@@ -1,6 +1,2 @@
 import train_configs.config16v6samplerAugMixB3
-import train_configs.config16pretrainb4
-import train_configs.config16v6samplerAugMix
-import train_configs.config16v6samplerAugMixEma
-import train_configs.config16pretrainb3
 
