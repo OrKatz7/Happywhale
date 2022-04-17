@@ -11,10 +11,8 @@ class config:
     n_folds = 5
     trn_folds = [0,1,2,3,4]
     log_DIR = '/home/kaor/whale_code/log/'
-    save_dir = '/sise/liorrk-group/OrDanOfir/output/'
-    # load_from = ['/home/kaor/whale_code/output/exp16pretrainb4_fold0_best.pth'] * 5
-    load_from = [f'/sise/liorrk-group/OrDanOfir/output/exp16v6AugmixB4Full_fold{row}_best.pth' for row in range(5)]
-    # load_from = ['/sise/liorrk-group/OrDanOfir/output/exp16v6AugmixFull_fold0_best.pth'] +  ['/home/kaor/whale_code/output/exp16pretrain_fold0_best.pth'] * 4
+    save_dir = 'output/'
+    load_from = [f'exp16v6AugmixB4Full_fold{row}_best.pth' for row in range(5)]
     old_model_head_dim = 15587
     debug=False
     apex=True
